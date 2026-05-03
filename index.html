@@ -3,23 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Runner Pro - Physics Fix</title>
+    <title>Runner Pro - Mobile Sound Fix</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; touch-action: none; }
         canvas { display: block; background: #000; margin: 0 auto; }
         #ui { 
             position: absolute; width: 100%; top: 20px; display: flex; 
             justify-content: space-around; color: white; font-weight: bold;
-            pointer-events: none; font-size: 18px; letter-spacing: 1px;
-            text-transform: uppercase; z-index: 10;
+            pointer-events: none; font-size: 18px; z-index: 10;
         }
     </style>
 </head>
 <body>
 
     <div id="ui">
-        <div class="score-box">Metros: <span id="dist">0</span></div>
-        <div class="score-box">Pontos: <span id="score">0</span></div>
+        <div>Metros: <span id="dist">0</span></div>
+        <div>Pontos: <span id="score">0</span></div>
     </div>
     <canvas id="gameCanvas"></canvas>
 
@@ -32,70 +31,58 @@ const distElement = document.getElementById('dist');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// --- SONS ---
+// --- CORREÇÃO DE ÁUDIO PARA WEB/GITHUB ---
+// Usamos caminhos relativos simples
 const musica = new Audio('fundo.mp3'); 
 musica.loop = true;
+musica.preload = 'auto';
+
 const somMoeda = new Audio('som moedas.mp3'); 
+somMoeda.preload = 'auto';
+
 let musicaIniciada = false;
 
-// --- PERSONAGEM (80px) - FÍSICA AJUSTADA ---
-const player = {
-    x: 100,
-    y: 100,
-    width: 80,  
-    height: 80, 
-    dy: 0,
-    jumpForce: 16, // Aumentado para pulo mais alto
-    gravity: 0.6,  // Reduzido para cair mais devagar
-    grounded: false,
-    img: new Image()
-};
+// Função para desbloquear o áudio (exigência de navegadores mobile)
+function ligarAudio() {
+    if (!musicaIniciada) {
+        musica.play().then(() => {
+            musicaIniciada = true;
+        }).catch(e => console.log("Aguardando interação para som..."));
+    }
+}
 
+// --- PERSONAGEM (80px) ---
+const player = {
+    x: 100, y: 100, width: 80, height: 80,
+    dy: 0, jumpForce: 16, gravity: 0.6,
+    grounded: false, img: new Image()
+};
 player.img.src = 'WhatsApp Image 2026-05-03 at 19.41.17.jpeg';
 
-let score = 0;
-let distance = 0;
-let gameSpeed = 6.5; 
-let platforms = [];
-let items = [];
-let frames = 0;
-let gameOver = false;
+let score = 0, distance = 0, gameSpeed = 6.5, frames = 0, gameOver = false;
+let platforms = [], items = [];
 
 class Platform {
     constructor(x, y, width, color) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = 35;
-        this.color = color;
+        this.x = x; this.y = y; this.width = width; this.height = 35; this.color = color;
     }
     draw() {
         ctx.save();
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 15; ctx.shadowColor = this.color;
         ctx.fillStyle = this.color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
-        ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-        ctx.fillRect(this.x, this.y, this.width, 6);
         ctx.restore();
     }
-    update() {
-        this.x -= gameSpeed;
-    }
+    update() { this.x -= gameSpeed; }
 }
 
 class Coin {
     constructor(x, y) {
-        this.x = x;
-        this.y = y;
-        this.size = 14;
-        this.angle = 0;
+        this.x = x; this.y = y; this.size = 14; this.angle = 0;
     }
     draw() {
         this.angle += 0.15;
         ctx.save();
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = "#FFD700";
         ctx.fillStyle = "#FFD700";
         let w = Math.cos(this.angle) * this.size;
         ctx.beginPath();
@@ -103,49 +90,24 @@ class Coin {
         ctx.fill();
         ctx.restore();
     }
-    update() {
-        this.x -= gameSpeed;
-    }
+    update() { this.x -= gameSpeed; }
 }
 
 function init() {
-    // Primeira plataforma bem segura
-    platforms = [
-        new Platform(0, canvas.height - 150, canvas.width + 100, "#00FBFF") 
-    ];
-    items = [];
-    score = 0;
-    distance = 0;
-    gameSpeed = 6.5;
-    gameOver = false;
-    player.y = canvas.height - 300;
-    player.dy = 0;
-    frames = 0;
+    platforms = [new Platform(0, canvas.height - 150, canvas.width + 100, "#00FBFF")];
+    items = []; score = 0; distance = 0; gameSpeed = 6.5; gameOver = false;
+    player.y = canvas.height - 300; player.dy = 0; frames = 0;
 }
 
 function spawnLogic() {
     let lastP = platforms[platforms.length - 1];
-    
-    // Cria plataforma quando a última estiver quase toda na tela
     if (lastP.x + lastP.width < canvas.width + 300) {
-        let colors = ["#00FBFF", "#FF00E5", "#39FF14", "#FFD700"];
-        
-        // GAP CONTROLADO: Nunca maior que 220px para ser sempre possível pular
         let gap = 120 + Math.random() * 100; 
         let newX = lastP.x + lastP.width + gap;
-        
-        // ALTURA CONTROLADA: Diferença máxima de 100px para cima ou para baixo
-        let minY = Math.max(250, lastP.y - 100);
-        let maxY = Math.min(canvas.height - 120, lastP.y + 100);
-        let newY = minY + Math.random() * (maxY - minY);
-        
-        let newWidth = 250 + Math.random() * 350; // Plataformas um pouco mais largas
-        
-        platforms.push(new Platform(newX, newY, newWidth, colors[Math.floor(Math.random()*colors.length)]));
-        
-        if (Math.random() > 0.4) {
-            items.push(new Coin(newX + newWidth/2, newY - 50));
-        }
+        let newY = Math.max(250, Math.min(canvas.height - 120, lastP.y + (Math.random() * 200 - 100)));
+        let newWidth = 250 + Math.random() * 350;
+        platforms.push(new Platform(newX, newY, newWidth, "#FF00E5"));
+        if (Math.random() > 0.4) items.push(new Coin(newX + newWidth/2, newY - 50));
     }
 }
 
@@ -157,8 +119,6 @@ function update() {
         ctx.textAlign = "center";
         ctx.font = 'bold 30px Segoe UI';
         ctx.fillText('OPS! VOCÊ CAIU', canvas.width/2, canvas.height/2);
-        ctx.font = '18px Segoe UI';
-        ctx.fillText('Toque ou Espaço para tentar de novo', canvas.width/2, canvas.height/2 + 40);
         return;
     }
 
@@ -172,45 +132,26 @@ function update() {
     player.grounded = false;
 
     platforms.forEach((p, i) => {
-        p.update();
-        p.draw();
-        
-        // Colisão aprimorada (Hitbox mais generosa para o jogador não cair injustamente)
-        if (player.x + player.width * 0.7 > p.x && 
-            player.x + player.width * 0.3 < p.x + p.width && 
-            player.y + player.height > p.y && 
-            player.y + player.height < p.y + p.height + player.dy + 5) {
-            
-            // Verifica se o pé do personagem está acima da plataforma
-            if (player.dy >= 0) {
-                player.grounded = true;
-                player.dy = 0;
-                player.y = p.y - player.height;
-            }
+        p.update(); p.draw();
+        if (player.x + player.width * 0.7 > p.x && player.x + player.width * 0.3 < p.x + p.width && 
+            player.y + player.height > p.y && player.y + player.height < p.y + p.height + player.dy + 5) {
+            if (player.dy >= 0) { player.grounded = true; player.dy = 0; player.y = p.y - player.height; }
         }
-        
         if (p.x + p.width < -500) platforms.splice(i, 1);
     });
 
     items.forEach((coin, i) => {
-        coin.update();
-        coin.draw();
+        coin.update(); coin.draw();
         let dx = (player.x + player.width/2) - coin.x;
         let dy = (player.y + player.height/2) - coin.y;
-        let dist = Math.sqrt(dx*dx + dy*dy);
-        
-        if (dist < 55) { 
-            items.splice(i, 1);
-            score += 10;
-            scoreElement.innerText = score;
-            gameSpeed += 0.015; // Velocidade aumenta mais devagar para ser justo
+        if (Math.sqrt(dx*dx + dy*dy) < 55) { 
+            items.splice(i, 1); score += 10; scoreElement.innerText = score;
             somMoeda.currentTime = 0;
-            somMoeda.play().catch(e => {}); 
+            somMoeda.play().catch(() => {}); 
         }
     });
 
     ctx.drawImage(player.img, player.x, player.y, player.width, player.height);
-
     if (player.y > canvas.height + 100) gameOver = true;
 
     spawnLogic();
@@ -219,11 +160,7 @@ function update() {
 
 function handleInput(e) {
     if (e && e.cancelable) e.preventDefault();
-
-    if (!musicaIniciada) {
-        musica.play().catch(e => {});
-        musicaIniciada = true;
-    }
+    ligarAudio(); // Tenta ligar o som em cada clique/toque
 
     if (gameOver) {
         init();
@@ -234,16 +171,9 @@ function handleInput(e) {
     }
 }
 
-window.addEventListener('keydown', (e) => { 
-    if(e.code === 'Space' || e.code === 'ArrowUp') handleInput(e);
-});
-canvas.addEventListener('mousedown', (e) => handleInput(e));
-canvas.addEventListener('touchstart', (e) => handleInput(e), { passive: false });
-
-window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-});
+window.addEventListener('keydown', (e) => { if(e.code === 'Space') handleInput(e); });
+canvas.addEventListener('mousedown', handleInput);
+canvas.addEventListener('touchstart', handleInput, { passive: false });
 
 init();
 update();
