@@ -3,23 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Runner Pro - Mobile Sound Fix</title>
+    <title>As Aventuras de Léo e sua Coca-Cola</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; touch-action: none; }
         canvas { display: block; background: #000; margin: 0 auto; }
+        
+        /* UI de Pontos */
         #ui { 
-            position: absolute; width: 100%; top: 20px; display: flex; 
-            justify-content: space-around; color: white; font-weight: bold;
+            position: absolute; width: 100%; top: 20px; display: none; 
+            justify-content: space-around; color: #fff; font-weight: bold;
             pointer-events: none; font-size: 18px; z-index: 10;
+            text-shadow: 0 0 10px #ff00e5, 0 0 20px #ff00e5;
+        }
+
+        /* Menu Inicial */
+        #menu {
+            position: absolute; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 100; text-align: center;
+        }
+
+        h1 {
+            color: #fff; font-size: 40px; margin-bottom: 30px;
+            text-shadow: 0 0 10px #ff00e5, 0 0 20px #ff00e5, 0 0 40px #ff00e5;
+            padding: 0 20px;
+        }
+
+        .btn-play {
+            padding: 15px 40px; font-size: 24px; color: #00fbff;
+            background: transparent; border: 3px solid #00fbff;
+            cursor: pointer; border-radius: 50px; font-weight: bold;
+            text-transform: uppercase; transition: 0.3s;
+            box-shadow: 0 0 15px #00fbff;
+        }
+
+        .btn-play:hover {
+            background: #00fbff; color: #000;
+            box-shadow: 0 0 30px #00fbff;
         }
     </style>
 </head>
 <body>
 
+    <div id="menu">
+        <h1>AS AVENTURAS DE LÉO<br><span style="color: #ff0000; text-shadow: 0 0 10px #ff0000;">E SUA COCA-COLA</span></h1>
+        <button class="btn-play" onclick="startGame()">Iniciar Aventura</button>
+    </div>
+
     <div id="ui">
         <div>Metros: <span id="dist">0</span></div>
         <div>Pontos: <span id="score">0</span></div>
     </div>
+
     <canvas id="gameCanvas"></canvas>
 
 <script>
@@ -27,33 +64,23 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreElement = document.getElementById('score');
 const distElement = document.getElementById('dist');
+const menu = document.getElementById('menu');
+const ui = document.getElementById('ui');
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// --- CORREÇÃO DE ÁUDIO PARA WEB/GITHUB ---
-// Usamos caminhos relativos simples
+// --- ÁUDIOS ---
 const musica = new Audio('fundo.mp3'); 
 musica.loop = true;
-musica.preload = 'auto';
-
 const somMoeda = new Audio('som moedas.mp3'); 
-somMoeda.preload = 'auto';
 
+let gameRunning = false;
 let musicaIniciada = false;
 
-// Função para desbloquear o áudio (exigência de navegadores mobile)
-function ligarAudio() {
-    if (!musicaIniciada) {
-        musica.play().then(() => {
-            musicaIniciada = true;
-        }).catch(e => console.log("Aguardando interação para som..."));
-    }
-}
-
-// --- PERSONAGEM (80px) ---
+// --- PERSONAGEM ---
 const player = {
-    x: 100, y: 100, width: 80, height: 80,
+    x: 100, y: 0, width: 80, height: 80,
     dy: 0, jumpForce: 16, gravity: 0.6,
     grounded: false, img: new Image()
 };
@@ -61,6 +88,20 @@ player.img.src = 'WhatsApp Image 2026-05-03 at 19.41.17.jpeg';
 
 let score = 0, distance = 0, gameSpeed = 6.5, frames = 0, gameOver = false;
 let platforms = [], items = [];
+
+function startGame() {
+    menu.style.display = 'none';
+    ui.style.display = 'flex';
+    gameRunning = true;
+    
+    // Inicia música (Mobile Safe)
+    if (!musicaIniciada) {
+        musica.play().catch(e => console.log("Erro áudio:", e));
+        musicaIniciada = true;
+    }
+    init();
+    update();
+}
 
 class Platform {
     constructor(x, y, width, color) {
@@ -83,6 +124,7 @@ class Coin {
     draw() {
         this.angle += 0.15;
         ctx.save();
+        ctx.shadowBlur = 10; ctx.shadowColor = "#ffd700";
         ctx.fillStyle = "#FFD700";
         let w = Math.cos(this.angle) * this.size;
         ctx.beginPath();
@@ -94,7 +136,7 @@ class Coin {
 }
 
 function init() {
-    platforms = [new Platform(0, canvas.height - 150, canvas.width + 100, "#00FBFF")];
+    platforms = [new Platform(0, canvas.height - 150, canvas.width + 100, "#00fbff")];
     items = []; score = 0; distance = 0; gameSpeed = 6.5; gameOver = false;
     player.y = canvas.height - 300; player.dy = 0; frames = 0;
 }
@@ -102,23 +144,22 @@ function init() {
 function spawnLogic() {
     let lastP = platforms[platforms.length - 1];
     if (lastP.x + lastP.width < canvas.width + 300) {
-        let gap = 120 + Math.random() * 100; 
+        let gap = 130 + Math.random() * 100; 
         let newX = lastP.x + lastP.width + gap;
-        let newY = Math.max(250, Math.min(canvas.height - 120, lastP.y + (Math.random() * 200 - 100)));
-        let newWidth = 250 + Math.random() * 350;
-        platforms.push(new Platform(newX, newY, newWidth, "#FF00E5"));
+        let newY = Math.max(200, Math.min(canvas.height - 150, lastP.y + (Math.random() * 200 - 100)));
+        let newWidth = 300 + Math.random() * 300;
+        platforms.push(new Platform(newX, newY, newWidth, "#ff00e5"));
         if (Math.random() > 0.4) items.push(new Coin(newX + newWidth/2, newY - 50));
     }
 }
 
 function update() {
+    if (!gameRunning) return;
     if (gameOver) {
-        ctx.fillStyle = 'rgba(0,0,0,0.85)';
-        ctx.fillRect(0,0, canvas.width, canvas.height);
-        ctx.fillStyle = '#fff';
-        ctx.textAlign = "center";
-        ctx.font = 'bold 30px Segoe UI';
-        ctx.fillText('OPS! VOCÊ CAIU', canvas.width/2, canvas.height/2);
+        menu.style.display = 'flex';
+        document.querySelector('h1').innerHTML = "FIM DE JOGO!<br><span style='font-size:20px'>Pontos: "+score+"</span>";
+        document.querySelector('.btn-play').innerText = "Tentar Novamente";
+        gameRunning = false;
         return;
     }
 
@@ -160,12 +201,7 @@ function update() {
 
 function handleInput(e) {
     if (e && e.cancelable) e.preventDefault();
-    ligarAudio(); // Tenta ligar o som em cada clique/toque
-
-    if (gameOver) {
-        init();
-        update();
-    } else if (player.grounded) {
+    if (gameRunning && player.grounded) {
         player.dy = -player.jumpForce;
         player.grounded = false;
     }
@@ -175,8 +211,10 @@ window.addEventListener('keydown', (e) => { if(e.code === 'Space') handleInput(e
 canvas.addEventListener('mousedown', handleInput);
 canvas.addEventListener('touchstart', handleInput, { passive: false });
 
-init();
-update();
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
 </script>
 </body>
 </html>
