@@ -42,7 +42,7 @@
         }
 
         .menu-buttons {
-            display: flex; flex-direction: column; gap: 20px;
+            display: flex; flex-direction: column; gap: 15px;
         }
 
         .btn {
@@ -61,6 +61,13 @@
             box-shadow: 0 0 15px rgba(255,0,229,0.3); font-size: 16px; padding: 12px 30px;
         }
         .btn-powerups:hover { background: #ff00e5; color: #000; box-shadow: 0 0 30px rgba(255,0,229,0.6); }
+
+        /* Estilo do novo botão de música */
+        .btn-music {
+            color: #00ff41; background: rgba(0,255,65,0.1); border: 2px solid #00ff41;
+            box-shadow: 0 0 15px rgba(0,255,65,0.3); font-size: 14px; padding: 10px 20px;
+        }
+        .btn-music:hover { background: #00ff41; color: #000; box-shadow: 0 0 30px rgba(0,255,65,0.6); }
 
         #btn-mute {
             position: absolute; top: 20px; right: 20px; z-index: 1000;
@@ -119,6 +126,10 @@
         <div class="menu-buttons">
             <button class="btn btn-play" onclick="startGame()">INICIAR</button>
             <button class="btn btn-powerups" onclick="showPowerUps()">POWER-UPS</button>
+            
+            <!-- Nova Opção de Música -->
+            <button class="btn btn-music" onclick="document.getElementById('music-upload').click()">ESCOLHER MÚSICA 🎵</button>
+            <input type="file" id="music-upload" accept="audio/*" style="display: none;">
         </div>
     </div>
 
@@ -169,6 +180,22 @@ function toggleMute() {
 
 function showPowerUps() { document.getElementById('powerups-modal').style.display = 'flex'; }
 function hidePowerUps() { document.getElementById('powerups-modal').style.display = 'none'; }
+
+// --- LÓGICA DE UPLOAD DE MÚSICA ---
+const musicUpload = document.getElementById('music-upload');
+musicUpload.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const url = URL.createObjectURL(file);
+        musica.src = url;
+        musica.loop = true;
+        // Se a música já estava tocando ou o jogo já iniciou, toca a nova
+        if (musicaIniciada) {
+            musica.play().catch(() => {});
+        }
+        alert("Música carregada com sucesso!");
+    }
+});
 
 // --- IMAGENS ---
 const imgNormal = new Image();
