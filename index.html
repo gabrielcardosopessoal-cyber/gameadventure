@@ -17,31 +17,117 @@
 
         #menu {
             position: absolute; width: 100%; height: 100%;
-            background: rgba(1, 1, 3, 0.9);
+            background: radial-gradient(circle at center, #1a1a2e 0%, #010103 100%);
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             z-index: 100; text-align: center;
         }
 
         h1 {
-            color: #fff; font-size: clamp(24px, 8vw, 45px); margin-bottom: 30px;
+            color: #fff; font-size: clamp(30px, 8vw, 55px); margin-bottom: 40px;
             text-shadow: 0 0 20px #00fbff; padding: 0 20px;
+            animation: pulseText 2s infinite alternate;
+        }
+
+        @keyframes pulseText {
+            0% { text-shadow: 0 0 15px #00fbff; transform: scale(1); }
+            100% { text-shadow: 0 0 30px #00fbff, 0 0 10px #00fbff; transform: scale(1.02); }
+        }
+
+        .menu-buttons {
+            display: flex; flex-direction: column; gap: 20px;
+        }
+
+        .btn {
+            padding: 15px 40px; font-size: 20px; cursor: pointer; border-radius: 6px; 
+            font-weight: bold; transition: 0.3s; text-transform: uppercase; letter-spacing: 2px;
         }
 
         .btn-play {
-            padding: 15px 40px; font-size: 22px; color: #00fbff;
-            background: transparent; border: 2px solid #00fbff;
-            cursor: pointer; border-radius: 4px; font-weight: bold;
-            box-shadow: 0 0 15px rgba(0,251,255,0.2); transition: 0.3s;
+            color: #00fbff; background: rgba(0,251,255,0.1); border: 2px solid #00fbff;
+            box-shadow: 0 0 15px rgba(0,251,255,0.3);
         }
-        .btn-play:hover { background: #00fbff; color: #000; }
+        .btn-play:hover { background: #00fbff; color: #000; box-shadow: 0 0 30px rgba(0,251,255,0.6); }
+
+        .btn-powerups {
+            color: #ff00e5; background: rgba(255,0,229,0.1); border: 2px solid #ff00e5;
+            box-shadow: 0 0 15px rgba(255,0,229,0.3); font-size: 16px; padding: 12px 30px;
+        }
+        .btn-powerups:hover { background: #ff00e5; color: #000; box-shadow: 0 0 30px rgba(255,0,229,0.6); }
+
+        #btn-mute {
+            position: absolute; top: 20px; right: 20px; z-index: 1000;
+            background: rgba(255,255,255,0.1); border: 2px solid #fff; color: white;
+            border-radius: 50%; width: 45px; height: 45px; font-size: 20px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: 0.3s; box-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+        #btn-mute:hover { background: #fff; color: #000; }
+
+        #powerups-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 200;
+            display: none; align-items: center; justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: #05050a; border: 2px solid #00fbff; border-radius: 12px;
+            padding: 30px; width: 90%; max-width: 450px;
+            box-shadow: 0 0 30px rgba(0,251,255,0.15);
+            display: flex; flex-direction: column; gap: 25px;
+        }
+
+        .modal-content h2 {
+            color: #00fbff; text-align: center; margin: 0; 
+            text-shadow: 0 0 10px #00fbff; letter-spacing: 2px;
+        }
+
+        .pu-item { display: flex; align-items: center; gap: 20px; color: #ccc; font-size: 14px; line-height: 1.4; }
+        .pu-item strong { color: #fff; font-size: 16px; }
+
+        .bottle-icon { width: 14px; height: 26px; position: relative; border-radius: 2px; flex-shrink: 0; margin-left: 10px; }
+        .bottle-icon::before { content: ''; position: absolute; top: -8px; left: 3px; width: 8px; height: 8px; border-radius: 2px 2px 0 0; }
+        .bottle-icon::after { content: ''; position: absolute; top: 10px; left: 0; width: 100%; height: 6px; background: #fff; }
+
+        .icon-gold { background: #ffd700; box-shadow: 0 0 20px #ffd700; }
+        .icon-gold::before { background: #ffd700; }
+        .icon-silver { background: #e0e0e0; box-shadow: 0 0 20px #ffffff; }
+        .icon-silver::before { background: #e0e0e0; }
+
+        .btn-entendi {
+            color: #ff00e5; background: transparent; border: 2px solid #ff00e5;
+            padding: 12px; font-size: 16px; font-weight: bold; cursor: pointer;
+            border-radius: 6px; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px;
+        }
+        .btn-entendi:hover { background: #ff00e5; color: #000; box-shadow: 0 0 20px rgba(255,0,229,0.5); }
     </style>
 </head>
 <body>
 
+    <button id="btn-mute" onclick="toggleMute()">🔊</button>
+
     <div id="menu">
-        <h1>LÉO & COCA-COLA<br><span style="color: #ff00e5; font-size: 0.6em;">GOLDEN EDITION</span></h1>
-        <button class="btn-play" onclick="startGame()">INICIAR</button>
+        <h1>LÉO & COCA-COLA<br><span style="color: #ff00e5; font-size: 0.5em; text-shadow: 0 0 15px #ff00e5;">GOLDEN EDITION</span></h1>
+        <div class="menu-buttons">
+            <button class="btn btn-play" onclick="startGame()">INICIAR</button>
+            <button class="btn btn-powerups" onclick="showPowerUps()">POWER-UPS</button>
+        </div>
+    </div>
+
+    <div id="powerups-modal">
+        <div class="modal-content">
+            <h2>POWER-UPS</h2>
+            <div class="pu-item">
+                <div class="bottle-icon icon-gold"></div>
+                <div><strong>COCA GOLD</strong><br>Velocidade turbo + rastro neon e +40 pontos.</div>
+            </div>
+            <div class="pu-item">
+                <div class="bottle-icon icon-silver"></div>
+                <div><strong>COCA SILVER</strong><br>Modo Flappy Back! Voe entre os prédios por 10s e ganhe +50 pontos.</div>
+            </div>
+            <button class="btn-entendi" onclick="hidePowerUps()">ENTENDI!</button>
+        </div>
     </div>
 
     <div id="ui">
@@ -66,22 +152,40 @@ const musica = new Audio('fundo.mp3');
 musica.loop = true;
 const somMoeda = new Audio('som moedas.mp3'); 
 
+let isMuted = false;
+function toggleMute() {
+    isMuted = !isMuted;
+    musica.muted = isMuted;
+    somMoeda.muted = isMuted;
+    document.getElementById('btn-mute').innerText = isMuted ? '🔇' : '🔊';
+}
+
+function showPowerUps() { document.getElementById('powerups-modal').style.display = 'flex'; }
+function hidePowerUps() { document.getElementById('powerups-modal').style.display = 'none'; }
+
 // --- IMAGENS ---
 const imgNormal = new Image();
 imgNormal.src = 'leo.png';
 const imgEspecial = new Image();
 imgEspecial.src = 'leo especial.png';
+const imgBack = new Image();
+imgBack.src = 'leo back.png';
+
+// Imagem do Outdoor
+const imgOutdoor = new Image();
+imgOutdoor.src = 'coca.jpg';
 
 const player = {
     x: 100, y: 0, width: 75, height: 75,
-    dy: 0, jumpForce: 15.5, gravity: 0.65,
+    dy: 0, jumpForce: 15.5, flapForce: 9, gravity: 0.65,
     grounded: false, currentImg: imgNormal,
-    isSpecial: false, specialTimer: 0
+    isSpecial: false, specialTimer: 0,
+    isSilver: false, silverTimer: 0
 };
 
 let gameRunning = false, gameOver = false, musicaIniciada = false;
 let score = 0, frames = 0, gameSpeed = 7;
-let platforms = [], items = [], cityLayers = [[], [], []];
+let platforms = [], items = [], cityLayers = [[], [], []], outdoors = [];
 
 function createCity() {
     cityLayers = [[], [], []];
@@ -143,17 +247,117 @@ function drawCity() {
     });
 }
 
-class Platform {
-    constructor(x, y, width) {
-        this.x = x; this.y = y; this.width = width; this.height = 25;
+// --- CLASSE DO OUTDOOR ---
+class Outdoor {
+    constructor(x) {
+        this.x = x;
+        this.width = 250;
+        this.height = 140;
+        this.y = canvas.height - 400 - Math.random() * 150; // Fica flutuando entre os prédios
     }
     draw() {
         ctx.save();
-        ctx.shadowBlur = 15; ctx.shadowColor = player.isSpecial ? "#ffd700" : "#ff00e5";
-        ctx.fillStyle = "#111";
+        
+        // Desenhando o poste
+        ctx.fillStyle = '#111';
+        ctx.fillRect(this.x + this.width/2 - 10, this.y + this.height, 20, canvas.height - this.y);
+        ctx.fillStyle = '#050505'; // Sombra do poste
+        ctx.fillRect(this.x + this.width/2, this.y + this.height, 10, canvas.height - this.y);
+
+        // Moldura do Outdoor com neon vermelho Coca-Cola
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = 'rgba(255, 0, 0, 0.8)';
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(this.x - 8, this.y - 8, this.width + 16, this.height + 16);
+
+        ctx.shadowBlur = 0; // Desativa sombra para desenhar a imagem
+
+        // Checa se a imagem foi carregada e desenha
+        if (imgOutdoor.complete && imgOutdoor.naturalHeight !== 0) {
+            ctx.drawImage(imgOutdoor, this.x, this.y, this.width, this.height);
+        } else {
+            // Se a imagem falhar/não existir, cria um fundo reserva legal
+            ctx.fillStyle = '#b30000';
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+            ctx.fillStyle = '#fff';
+            ctx.font = "bold 20px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("COCA.JPG", this.x + this.width/2, this.y + this.height/2 + 5);
+        }
+
+        // Brilho no "vidro" da tela para dar mais realismo
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.x + this.width, this.y);
+        ctx.lineTo(this.x + this.width, this.y + this.height * 0.4);
+        ctx.lineTo(this.x, this.y + this.height * 0.8);
+        ctx.fill();
+
+        ctx.restore();
+    }
+    update() {
+        // Velocidade parallax (mais devagar que o jogador, mais rápido que o fundo)
+        this.x -= gameSpeed * 0.5; 
+    }
+}
+
+// --- PLATAFORMAS MAIS BONITAS ---
+class Platform {
+    constructor(x, y, width, height = 30, isVertical = false) {
+        this.x = x; this.y = y; this.width = width; this.height = height; this.isVertical = isVertical;
+    }
+    draw() {
+        ctx.save();
+        
+        let baseNeon = player.isSpecial ? "#ffd700" : (player.isSilver ? "#ffffff" : "#ff00e5");
+        
+        // Efeito de brilho na plataforma inteira
+        ctx.shadowBlur = 15; 
+        ctx.shadowColor = baseNeon;
+        
+        // Gradiente principal da plataforma (para não ficar só um bloco preto)
+        let grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
+        grad.addColorStop(0, "#1a1a2e"); // topo mais claro
+        grad.addColorStop(1, "#05050a"); // fundo mais escuro
+        ctx.fillStyle = grad;
         ctx.fillRect(this.x, this.y, this.width, this.height);
-        ctx.fillStyle = player.isSpecial ? "#ffd700" : "#ff00e5";
-        ctx.fillRect(this.x, this.y, this.width, 3);
+        
+        ctx.shadowBlur = 0; // Desliga neon pras linhas internas
+        
+        // Detalhes internos: Grade/Tech Grid
+        if (!this.isVertical) {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+            for(let i = 15; i < this.width; i += 30) {
+                ctx.fillRect(this.x + i, this.y, 2, this.height);
+            }
+        }
+
+        // Bordas super brilhantes em Neon
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = baseNeon;
+        ctx.fillStyle = baseNeon;
+
+        if(this.isVertical) {
+            // Estilo de Cano vertical (Modo Prata)
+            ctx.fillRect(this.x, this.y, 4, this.height); // linha esquerda
+            ctx.fillRect(this.x + this.width - 4, this.y, 4, this.height); // linha direita
+            
+            // "Boca" do cano/plataforma (Tampão)
+            if (this.y === 0) { // Cano de cima
+                ctx.fillRect(this.x - 6, this.height - 12, this.width + 12, 12);
+            } else { // Cano de baixo
+                ctx.fillRect(this.x - 6, this.y, this.width + 12, 12);
+            }
+        } else {
+            // Linha principal em cima
+            ctx.fillRect(this.x, this.y, this.width, 4);
+            // Linha secundária de detalhe em baixo
+            ctx.globalAlpha = 0.5;
+            ctx.fillRect(this.x, this.y + this.height - 3, this.width, 3);
+            ctx.globalAlpha = 1.0;
+        }
+        
         ctx.restore();
     }
     update() { this.x -= gameSpeed; }
@@ -168,18 +372,21 @@ class Bottle {
         ctx.save();
         ctx.translate(this.x, this.y + bounce);
         
-        let color = this.type === "golden" ? "#ffd700" : "#ff0000";
+        let color = this.type === "golden" ? "#ffd700" : (this.type === "silver" ? "#e0e0e0" : "#ff0000");
+        
         if(this.type === "golden") {
             ctx.shadowBlur = 20; ctx.shadowColor = "gold";
+        } else if(this.type === "silver") {
+            ctx.shadowBlur = 20; ctx.shadowColor = "#ffffff";
         } else {
             ctx.shadowBlur = 10; ctx.shadowColor = "red";
         }
         
         ctx.fillStyle = color;
-        ctx.fillRect(-6, -10, 12, 20); // Corpo
-        ctx.fillRect(-3, -18, 6, 8);   // Pescoço
-        ctx.fillStyle = this.type === "golden" ? "#fff" : "#ffffff";
-        ctx.fillRect(-6, -2, 12, 6);   // Rótulo
+        ctx.fillRect(-6, -10, 12, 20);
+        ctx.fillRect(-3, -18, 6, 8);
+        ctx.fillStyle = (this.type === "golden" || this.type === "silver") ? "#fff" : "#ffffff";
+        ctx.fillRect(-6, -2, 12, 6);
         ctx.restore();
     }
     update() { this.x -= gameSpeed; }
@@ -196,9 +403,17 @@ function startGame() {
 function init() {
     createCity();
     platforms = [new Platform(0, canvas.height - 150, canvas.width + 400)];
-    items = []; score = 0; gameSpeed = 7; gameOver = false; frames = 0;
+    items = []; 
+    outdoors = []; // Reinicia os outdoors
+    score = 0; gameSpeed = 7; gameOver = false; frames = 0;
+    
+    // Cria o primeiro outdoor no fundo
+    outdoors.push(new Outdoor(canvas.width + 300));
+
     player.y = canvas.height - 300; player.dy = 0;
-    player.currentImg = imgNormal; player.isSpecial = false;
+    player.currentImg = imgNormal; 
+    player.isSpecial = false; player.specialTimer = 0;
+    player.isSilver = false; player.silverTimer = 0;
     loop();
 }
 
@@ -206,7 +421,8 @@ function loop() {
     if (!gameRunning) return;
     if (gameOver) {
         menu.style.display = 'flex';
-        document.querySelector('h1').innerHTML = "FIM DE JOGO<br><span style='color:#ffd700; font-size:0.5em'>"+score+" PONTOS</span>";
+        document.querySelector('h1').innerHTML = "FIM DE JOGO<br><span style='color:#ffd700; font-size:0.5em; text-shadow: 0 0 10px #ffd700;'>"+score+" PONTOS</span>";
+        document.querySelector('.btn-play').innerText = "TENTAR NOVAMENTE";
         gameRunning = false;
         return;
     }
@@ -216,17 +432,52 @@ function loop() {
     distElement.innerText = Math.floor(frames/10);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Lógica do Power-up
+    // Lógica Dourada
     if(player.isSpecial) {
         player.specialTimer--;
         if(player.specialTimer <= 0) {
             player.isSpecial = false;
-            player.currentImg = imgNormal;
-            gameSpeed -= 3; // Volta a velocidade
+            if(!player.isSilver) player.currentImg = imgNormal;
+            gameSpeed -= 3;
         }
     }
 
+    // Lógica Prata
+    if(player.isSilver) {
+        player.silverTimer--;
+        if(player.y < 0) { player.y = 0; player.dy = 0; }
+        
+        if(player.silverTimer <= 0) {
+            player.isSilver = false;
+            player.currentImg = player.isSpecial ? imgEspecial : imgNormal;
+            
+            platforms = platforms.filter(p => !p.isVertical);
+            items = []; 
+            platforms.push(new Platform(player.x - 100, canvas.height - 150, canvas.width + 800));
+        }
+    }
+
+    // Desenha prédios de fundo
     drawCity();
+
+    // Atualiza e Desenha Outdoors
+    outdoors.forEach((o, i) => {
+        o.update(); o.draw();
+        // Remove quando sair bem da tela
+        if (o.x + o.width < -100) outdoors.splice(i, 1);
+    });
+
+    // Lógica para spawnar novos Outdoors de tempos em tempos
+    let lastOutdoor = outdoors[outdoors.length - 1];
+    let spawnLimitOutdoor = lastOutdoor ? lastOutdoor.x : 0;
+    
+    // Garante que eles não fiquem colados
+    if (spawnLimitOutdoor < canvas.width - 600) {
+        // Tem uma pequena chance de aparecer um novo se houver espaço
+        if (Math.random() > 0.99) { 
+            outdoors.push(new Outdoor(canvas.width + 200));
+        }
+    }
 
     player.dy += player.gravity;
     player.y += player.dy;
@@ -234,10 +485,22 @@ function loop() {
 
     platforms.forEach((p, i) => {
         p.update(); p.draw();
-        if (player.x + 50 > p.x && player.x + 20 < p.x + p.width && 
-            player.y + player.height > p.y && player.y + player.height < p.y + p.height + player.dy + 5) {
-            if (player.dy >= 0) { player.grounded = true; player.dy = 0; player.y = p.y - player.height; }
+        
+        if(p.isVertical) {
+            let margin = 15;
+            if (player.x + margin < p.x + p.width &&
+                player.x + player.width - margin > p.x &&
+                player.y + margin < p.y + p.height &&
+                player.y + player.height - margin > p.y) {
+                    gameOver = true;
+            }
+        } else {
+            if (player.x + 50 > p.x && player.x + 20 < p.x + p.width && 
+                player.y + player.height > p.y && player.y + player.height < p.y + p.height + player.dy + 5) {
+                if (player.dy >= 0) { player.grounded = true; player.dy = 0; player.y = p.y - player.height; }
+            }
         }
+        
         if (p.x + p.width < -200) platforms.splice(i, 1);
     });
 
@@ -246,38 +509,69 @@ function loop() {
         let dx = (player.x + 37) - item.x;
         let dy = (player.y + 37) - item.y;
         if (Math.sqrt(dx*dx + dy*dy) < 50) { 
+            
             if(item.type === "golden") {
                 score += 40;
-                gameSpeed += 3;
+                if(!player.isSpecial) gameSpeed += 3; 
                 player.isSpecial = true;
-                player.currentImg = imgEspecial;
-                player.specialTimer = 300; // Dura aprox. 5 segundos
+                if(!player.isSilver) player.currentImg = imgEspecial; 
+                player.specialTimer = 300; 
+                
+            } else if (item.type === "silver") {
+                score += 50;
+                player.isSilver = true;
+                player.silverTimer = 600; 
+                player.currentImg = imgBack;
+                
+                platforms = platforms.filter(p => p.x + p.width < player.x + 100);
+                items = items.filter(it => it.x < player.x + 100);
+                
             } else {
                 score += 10;
                 gameSpeed += 0.02;
             }
+            
             items.splice(i, 1);
             somMoeda.currentTime = 0; somMoeda.play().catch(() => {});
         }
     });
 
     let lastP = platforms[platforms.length - 1];
-    if (lastP.x + lastP.width < canvas.width + 300) {
-        let gap = 130 + Math.random() * 120;
-        let nY = Math.max(200, Math.min(canvas.height - 120, lastP.y + (Math.random() * 160 - 80)));
-        platforms.push(new Platform(lastP.x + lastP.width + gap, nY, 300 + Math.random() * 200));
+    let spawnLimit = lastP ? lastP.x + lastP.width : 0;
+
+    if (spawnLimit < canvas.width + 300) {
         
-        // Spawn de Itens
-        let rand = Math.random();
-        if (rand > 0.95) { // 5% de chance de ser Dourada
-            items.push(new Bottle(lastP.x + lastP.width + gap + 150, nY - 60, "golden"));
-        } else if (rand > 0.5) {
-            items.push(new Bottle(lastP.x + lastP.width + gap + 150, nY - 50, "normal"));
+        if (player.isSilver) {
+            let pipeWidth = 80;
+            let gapWidth = 450;
+            let openingSize = 350; 
+            let minHeight = 100;
+            
+            let openingY = minHeight + Math.random() * (canvas.height - minHeight * 2 - openingSize);
+            let nextX = Math.max(spawnLimit + gapWidth, player.x + 600);
+            
+            platforms.push(new Platform(nextX, 0, pipeWidth, openingY, true));
+            platforms.push(new Platform(nextX, openingY + openingSize, pipeWidth, canvas.height - (openingY + openingSize), true));
+            
+        } else {
+            let gap = 130 + Math.random() * 120;
+            let nextX = Math.max(spawnLimit + gap, player.x + 150);
+            let nY = lastP ? Math.max(200, Math.min(canvas.height - 120, lastP.y + (Math.random() * 160 - 80))) : canvas.height - 150;
+            
+            platforms.push(new Platform(nextX, nY, 300 + Math.random() * 200, 30, false)); // Altura levemente maior
+            
+            let rand = Math.random();
+            if (rand > 0.88) { 
+                items.push(new Bottle(nextX + 150, nY - 60, "golden"));
+            } else if (rand > 0.76) { 
+                items.push(new Bottle(nextX + 150, nY - 60, "silver"));
+            } else if (rand > 0.40) { 
+                items.push(new Bottle(nextX + 150, nY - 50, "normal"));
+            }
         }
     }
 
-    // Efeito visual de rastro se estiver especial
-    if(player.isSpecial) {
+    if(player.isSpecial || player.isSilver) {
         ctx.globalAlpha = 0.3;
         ctx.drawImage(player.currentImg, player.x - 20, player.y, player.width, player.height);
         ctx.globalAlpha = 1.0;
@@ -291,7 +585,11 @@ function loop() {
 
 function handleInput(e) {
     if (e && e.cancelable) e.preventDefault();
-    if (gameRunning && player.grounded) {
+    if (!gameRunning) return;
+    
+    if (player.isSilver) {
+        player.dy = -player.flapForce;
+    } else if (player.grounded) {
         player.dy = -player.jumpForce;
         player.grounded = false;
     }
