@@ -3,27 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Léo & Coca-Cola: Night City</title>
+    <title>Léo & Coca-Cola: Neon City Final</title>
     <style>
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background: #0a0a12; /* Fundo escuro confortável */
-            font-family: 'Segoe UI', sans-serif; 
-            touch-action: none; 
-        }
+        body { margin: 0; overflow: hidden; background: #010103; font-family: 'Segoe UI', sans-serif; touch-action: none; }
         canvas { display: block; margin: 0 auto; }
         
         #ui { 
             position: absolute; width: 100%; top: 20px; display: none; 
-            justify-content: space-around; color: #00fbff; font-weight: bold;
+            justify-content: space-around; color: #fff; font-weight: bold;
             pointer-events: none; font-size: 20px; z-index: 10;
-            text-shadow: 0 0 8px rgba(0, 251, 255, 0.5);
+            text-shadow: 0 0 10px #ff00e5;
         }
 
         #menu {
             position: absolute; width: 100%; height: 100%;
-            background: rgba(10, 10, 18, 0.9);
+            background: rgba(1, 1, 3, 0.9);
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             z-index: 100; text-align: center;
@@ -31,32 +25,27 @@
 
         h1 {
             color: #fff; font-size: clamp(24px, 8vw, 45px); margin-bottom: 30px;
-            text-shadow: 0 0 15px #ff00e5;
-            padding: 0 20px;
+            text-shadow: 0 0 20px #00fbff; padding: 0 20px;
         }
 
         .btn-play {
-            padding: 15px 40px; font-size: 22px; color: #fff;
+            padding: 15px 40px; font-size: 22px; color: #00fbff;
             background: transparent; border: 2px solid #00fbff;
-            cursor: pointer; border-radius: 8px; font-weight: bold;
-            text-transform: uppercase; box-shadow: 0 0 15px rgba(0,251,255,0.3);
-            transition: 0.3s;
+            cursor: pointer; border-radius: 4px; font-weight: bold;
+            box-shadow: 0 0 15px rgba(0,251,255,0.2); transition: 0.3s;
         }
-
         .btn-play:hover { background: #00fbff; color: #000; }
     </style>
 </head>
 <body>
 
     <div id="menu">
-        <h1>LÉO E A COCA-COLA<br>
-            <span style="color: #ff3333; font-size: 0.7em;">NIGHT ADVENTURE</span>
-        </h1>
-        <button class="btn-play" onclick="startGame()">Iniciar</button>
+        <h1>LÉO & COCA-COLA<br><span style="color: #ff00e5; font-size: 0.6em;">NIGHT RUNNER</span></h1>
+        <button class="btn-play" onclick="startGame()">INICIAR</button>
     </div>
 
     <div id="ui">
-        <div>DISTÂNCIA: <span id="dist">0</span>m</div>
+        <div>METROS: <span id="dist">0</span></div>
         <div>PONTOS: <span id="score">0</span></div>
     </div>
 
@@ -73,91 +62,124 @@ const ui = document.getElementById('ui');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// --- ATIVOS ---
 const musica = new Audio('fundo.mp3'); 
 musica.loop = true;
 const somMoeda = new Audio('som moedas.mp3'); 
 
 const player = {
-    x: 100, y: 0, width: 70, height: 70,
-    dy: 0, jumpForce: 15, gravity: 0.6,
+    x: 100, y: 0, width: 75, height: 75,
+    dy: 0, jumpForce: 15.5, gravity: 0.65,
     grounded: false, img: new Image()
 };
 player.img.src = 'leo.png';
 
-let gameRunning = false, musicaIniciada = false, gameOver = false;
-let score = 0, frames = 0, gameSpeed = 6;
-let platforms = [], items = [], buildings = [];
+let gameRunning = false, gameOver = false, musicaIniciada = false;
+let score = 0, frames = 0, gameSpeed = 7;
+let platforms = [], items = [], cityLayers = [[], [], []];
 
-// --- GERADOR DE CIDADE REALISTA ---
-function createBuildings() {
-    buildings = [];
-    for(let i = 0; i < 15; i++) {
-        buildings.push({
-            x: Math.random() * canvas.width * 2,
-            width: 80 + Math.random() * 120,
-            height: 150 + Math.random() * 400,
-            speed: 0.5 + Math.random() * 1.5,
-            color: '#1a1a2e',
-            windows: Array.from({length: 12}, () => Math.random() > 0.7)
-        });
+function createCity() {
+    cityLayers = [[], [], []];
+    for(let l=0; l<3; l++) {
+        for(let i=0; i<10; i++) {
+            cityLayers[l].push({
+                x: Math.random() * canvas.width * 2,
+                width: 120 + Math.random() * 140,
+                height: 100 + Math.random() * (canvas.height * 0.7),
+                speed: [0.3, 0.8, 1.5][l],
+                color: ['#05050a', '#0a0a1a', '#101025'][l],
+                hasAntenna: Math.random() > 0.4,
+                windows: Array.from({length: 12}, () => ({
+                    on: Math.random() > 0.5,
+                    blinkSpeed: 0.01 + Math.random() * 0.02,
+                    opacity: Math.random()
+                }))
+            });
+        }
     }
 }
 
 function drawCity() {
-    buildings.forEach(b => {
-        // Corpo do prédio
-        ctx.fillStyle = b.color;
-        ctx.fillRect(b.x, canvas.height - b.height, b.width, b.height);
-        
-        // Janelas iluminadas
-        ctx.fillStyle = "#f1c40f55";
-        let winW = 8, winH = 8;
-        for(let row = 0; row < 10; row++) {
-            for(let col = 0; col < 3; col++) {
-                if(b.windows[row]) {
-                    ctx.fillRect(b.x + 15 + (col * 30), canvas.height - b.height + 20 + (row * 35), winW, winH);
+    cityLayers.forEach(layer => {
+        layer.forEach(b => {
+            // Prédio
+            ctx.fillStyle = b.color;
+            ctx.fillRect(b.x, canvas.height - b.height, b.width, b.height);
+            
+            // Anteninhas que piscam
+            if(b.hasAntenna) {
+                ctx.strokeStyle = b.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(b.x + b.width/2, canvas.height - b.height);
+                ctx.lineTo(b.x + b.width/2, canvas.height - b.height - 30);
+                ctx.stroke();
+                
+                // Luz de sinalização piscante
+                if(Math.floor(frames / 30) % 2 === 0) {
+                    ctx.fillStyle = "#ff0000";
+                    ctx.shadowBlur = 10; ctx.shadowColor = "red";
+                    ctx.beginPath();
+                    ctx.arc(b.x + b.width/2, canvas.height - b.height - 32, 3, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
                 }
             }
-        }
-        
-        if(gameRunning) b.x -= b.speed;
-        if(b.x + b.width < 0) b.x = canvas.width + 100;
+
+            // Janelas
+            b.windows.forEach((w, i) => {
+                if(w.on) {
+                    w.opacity += w.blinkSpeed;
+                    let alpha = 0.1 + (Math.abs(Math.sin(w.opacity)) * 0.3);
+                    ctx.fillStyle = `rgba(255, 255, 180, ${alpha})`;
+                    let wx = b.x + 20 + (i % 3 * 35);
+                    let wy = canvas.height - b.height + 30 + (Math.floor(i/3) * 45);
+                    if(wx < b.x + b.width - 20) ctx.fillRect(wx, wy, 10, 10);
+                }
+            });
+
+            if(gameRunning) b.x -= b.speed;
+            if(b.x + b.width < 0) b.x = canvas.width + 100;
+        });
     });
 }
 
-// --- LÓGICA DO JOGO ---
 class Platform {
     constructor(x, y, width) {
-        this.x = x; this.y = y; this.width = width; this.height = 30;
+        this.x = x; this.y = y; this.width = width; this.height = 25;
     }
     draw() {
-        // Base da viga
-        let grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
-        grad.addColorStop(0, "#2c3e50");
-        grad.addColorStop(1, "#000000");
-        ctx.fillStyle = grad;
+        ctx.save();
+        ctx.shadowBlur = 15; ctx.shadowColor = "#ff00e5";
+        ctx.fillStyle = "#111";
         ctx.fillRect(this.x, this.y, this.width, this.height);
-        
-        // Brilho Neon na borda
-        ctx.strokeStyle = "#00fbff";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(this.x, this.y, this.width, this.height);
+        // Friso Neon
+        ctx.fillStyle = `rgba(255, 0, 229, ${0.5 + Math.abs(Math.sin(frames * 0.05)) * 0.5})`;
+        ctx.fillRect(this.x, this.y, this.width, 3);
+        ctx.restore();
     }
     update() { this.x -= gameSpeed; }
 }
 
-class Coin {
+class Bottle { // Moeda em formato de garrafinha
     constructor(x, y) {
-        this.x = x; this.y = y; this.radius = 12;
+        this.x = x; this.y = y;
     }
     draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
-        ctx.fillStyle = "#FFD700";
-        ctx.shadowBlur = 15; ctx.shadowColor = "#FFD700";
-        ctx.fill();
-        ctx.shadowBlur = 0;
+        let bounce = Math.sin(frames * 0.1) * 8;
+        ctx.save();
+        ctx.translate(this.x, this.y + bounce);
+        ctx.shadowBlur = 15; ctx.shadowColor = "#ff0000";
+        
+        // Desenho da Garrafinha Estilizada
+        ctx.fillStyle = "#ff0000"; // Corpo
+        ctx.fillRect(-6, -10, 12, 20); // Base
+        ctx.fillRect(-3, -18, 6, 8);   // Pescoço
+        ctx.fillStyle = "#ffffff";    // Rótulo
+        ctx.fillRect(-6, -2, 12, 6);
+        ctx.fillStyle = "#ddd";       // Tampinha
+        ctx.fillRect(-4, -20, 8, 3);
+        
+        ctx.restore();
     }
     update() { this.x -= gameSpeed; }
 }
@@ -166,37 +188,34 @@ function startGame() {
     menu.style.display = 'none';
     ui.style.display = 'flex';
     gameRunning = true;
-    if (!musicaIniciada) {
-        musica.play().catch(e => {});
-        musicaIniciada = true;
-    }
+    if (!musicaIniciada) { musica.play().catch(() => {}); musicaIniciada = true; }
     init();
-    update();
 }
 
 function init() {
-    createBuildings();
-    platforms = [new Platform(0, canvas.height - 120, canvas.width + 200)];
-    items = []; score = 0; gameSpeed = 6; gameOver = false; frames = 0;
+    createCity();
+    platforms = [new Platform(0, canvas.height - 150, canvas.width + 400)];
+    items = []; score = 0; gameSpeed = 7; gameOver = false; frames = 0;
     player.y = canvas.height - 300; player.dy = 0;
+    loop();
 }
 
-function update() {
+function loop() {
     if (!gameRunning) return;
     if (gameOver) {
         menu.style.display = 'flex';
-        document.querySelector('h1').innerHTML = "FIM DE JOGO<br><span style='font-size:20px; color:#00fbff'>"+score+" PONTOS</span>";
+        document.querySelector('h1').innerHTML = "GAME OVER<br><span style='color:#00fbff; font-size:0.5em'>"+score+" PONTOS</span>";
         gameRunning = false;
         return;
     }
 
     frames++;
+    scoreElement.innerText = score;
     distElement.innerText = Math.floor(frames/10);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     drawCity();
 
-    // Player
     player.dy += player.gravity;
     player.y += player.dy;
     player.grounded = false;
@@ -207,33 +226,32 @@ function update() {
             player.y + player.height > p.y && player.y + player.height < p.y + p.height + player.dy + 5) {
             if (player.dy >= 0) { player.grounded = true; player.dy = 0; player.y = p.y - player.height; }
         }
-        if (p.x + p.width < -100) platforms.splice(i, 1);
+        if (p.x + p.width < -200) platforms.splice(i, 1);
     });
 
-    items.forEach((coin, i) => {
-        coin.update(); coin.draw();
-        let dx = (player.x + 35) - coin.x;
-        let dy = (player.y + 35) - coin.y;
-        if (Math.sqrt(dx*dx + dy*dy) < 45) { 
-            items.splice(i, 1); score += 10; scoreElement.innerText = score;
+    items.forEach((bottle, i) => {
+        bottle.update(); bottle.draw();
+        let dx = (player.x + 37) - bottle.x;
+        let dy = (player.y + 37) - bottle.y;
+        if (Math.sqrt(dx*dx + dy*dy) < 50) { 
+            items.splice(i, 1); score += 10;
             somMoeda.currentTime = 0; somMoeda.play().catch(() => {});
-            gameSpeed += 0.05;
+            gameSpeed += 0.02;
         }
     });
 
-    // Spawn inteligente
     let lastP = platforms[platforms.length - 1];
-    if (lastP.x + lastP.width < canvas.width + 200) {
-        let newX = lastP.x + lastP.width + (100 + Math.random() * 120);
-        let newY = Math.max(180, Math.min(canvas.height - 100, lastP.y + (Math.random() * 140 - 70)));
-        platforms.push(new Platform(newX, newY, 250 + Math.random() * 200));
-        if (Math.random() > 0.5) items.push(new Coin(newX + 100, newY - 40));
+    if (lastP.x + lastP.width < canvas.width + 300) {
+        let gap = 130 + Math.random() * 120;
+        let nY = Math.max(200, Math.min(canvas.height - 120, lastP.y + (Math.random() * 160 - 80)));
+        platforms.push(new Platform(lastP.x + lastP.width + gap, nY, 300 + Math.random() * 200));
+        if (Math.random() > 0.5) items.push(new Bottle(lastP.x + lastP.width + gap + 150, nY - 50));
     }
 
     ctx.drawImage(player.img, player.x, player.y, player.width, player.height);
     if (player.y > canvas.height) gameOver = true;
 
-    requestAnimationFrame(update);
+    requestAnimationFrame(loop);
 }
 
 function handleInput(e) {
@@ -244,15 +262,10 @@ function handleInput(e) {
     }
 }
 
-window.addEventListener('keydown', (e) => { if(e.code === 'Space') handleInput(e); });
+window.addEventListener('keydown', (e) => { if(e.code === 'Space' || e.code === 'ArrowUp') handleInput(e); });
 canvas.addEventListener('touchstart', handleInput, { passive: false });
 canvas.addEventListener('mousedown', handleInput);
-
-window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    createBuildings();
-});
+window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
 </script>
 </body>
 </html>
