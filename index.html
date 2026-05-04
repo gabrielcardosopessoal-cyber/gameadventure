@@ -3,58 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>As Aventuras de Léo e sua Coca-Cola</title>
+    <title>Léo & Coca-Cola: Night City</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; touch-action: none; }
-        canvas { display: block; background: #000; margin: 0 auto; }
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #0a0a12; /* Fundo escuro confortável */
+            font-family: 'Segoe UI', sans-serif; 
+            touch-action: none; 
+        }
+        canvas { display: block; margin: 0 auto; }
         
-        /* UI de Pontos */
         #ui { 
             position: absolute; width: 100%; top: 20px; display: none; 
-            justify-content: space-around; color: #fff; font-weight: bold;
-            pointer-events: none; font-size: 18px; z-index: 10;
-            text-shadow: 0 0 10px #ff00e5, 0 0 20px #ff00e5;
+            justify-content: space-around; color: #00fbff; font-weight: bold;
+            pointer-events: none; font-size: 20px; z-index: 10;
+            text-shadow: 0 0 8px rgba(0, 251, 255, 0.5);
         }
 
-        /* Menu Inicial */
         #menu {
             position: absolute; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
+            background: rgba(10, 10, 18, 0.9);
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             z-index: 100; text-align: center;
         }
 
         h1 {
-            color: #fff; font-size: 40px; margin-bottom: 30px;
-            text-shadow: 0 0 10px #ff00e5, 0 0 20px #ff00e5, 0 0 40px #ff00e5;
+            color: #fff; font-size: clamp(24px, 8vw, 45px); margin-bottom: 30px;
+            text-shadow: 0 0 15px #ff00e5;
             padding: 0 20px;
         }
 
         .btn-play {
-            padding: 15px 40px; font-size: 24px; color: #00fbff;
-            background: transparent; border: 3px solid #00fbff;
-            cursor: pointer; border-radius: 50px; font-weight: bold;
-            text-transform: uppercase; transition: 0.3s;
-            box-shadow: 0 0 15px #00fbff;
+            padding: 15px 40px; font-size: 22px; color: #fff;
+            background: transparent; border: 2px solid #00fbff;
+            cursor: pointer; border-radius: 8px; font-weight: bold;
+            text-transform: uppercase; box-shadow: 0 0 15px rgba(0,251,255,0.3);
+            transition: 0.3s;
         }
 
-        .btn-play:hover {
-            background: #00fbff; color: #000;
-            box-shadow: 0 0 30px #00fbff;
-        }
+        .btn-play:hover { background: #00fbff; color: #000; }
     </style>
 </head>
 <body>
 
     <div id="menu">
-        <h1>AS AVENTURAS DE LÉO<br><span style="color: #ff0000; text-shadow: 0 0 10px #ff0000;">E SUA COCA-COLA</span></h1>
-        <button class="btn-play" onclick="startGame()">Iniciar Aventura</button>
+        <h1>LÉO E A COCA-COLA<br>
+            <span style="color: #ff3333; font-size: 0.7em;">NIGHT ADVENTURE</span>
+        </h1>
+        <button class="btn-play" onclick="startGame()">Iniciar</button>
     </div>
 
     <div id="ui">
-        <div>Metros: <span id="dist">0</span></div>
-        <div>Pontos: <span id="score">0</span></div>
+        <div>DISTÂNCIA: <span id="dist">0</span>m</div>
+        <div>PONTOS: <span id="score">0</span></div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -70,132 +73,166 @@ const ui = document.getElementById('ui');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// --- ÁUDIOS ---
+// --- ATIVOS ---
 const musica = new Audio('fundo.mp3'); 
 musica.loop = true;
 const somMoeda = new Audio('som moedas.mp3'); 
 
-let gameRunning = false;
-let musicaIniciada = false;
-
-// --- PERSONAGEM ---
 const player = {
-    x: 100, y: 0, width: 80, height: 80,
-    dy: 0, jumpForce: 16, gravity: 0.6,
+    x: 100, y: 0, width: 70, height: 70,
+    dy: 0, jumpForce: 15, gravity: 0.6,
     grounded: false, img: new Image()
 };
-player.img.src = 'WhatsApp Image 2026-05-03 at 19.41.17.jpeg';
+player.img.src = 'leo.png';
 
-let score = 0, distance = 0, gameSpeed = 6.5, frames = 0, gameOver = false;
-let platforms = [], items = [];
+let gameRunning = false, musicaIniciada = false, gameOver = false;
+let score = 0, frames = 0, gameSpeed = 6;
+let platforms = [], items = [], buildings = [];
 
-function startGame() {
-    menu.style.display = 'none';
-    ui.style.display = 'flex';
-    gameRunning = true;
-    
-    // Inicia música (Mobile Safe)
-    if (!musicaIniciada) {
-        musica.play().catch(e => console.log("Erro áudio:", e));
-        musicaIniciada = true;
+// --- GERADOR DE CIDADE REALISTA ---
+function createBuildings() {
+    buildings = [];
+    for(let i = 0; i < 15; i++) {
+        buildings.push({
+            x: Math.random() * canvas.width * 2,
+            width: 80 + Math.random() * 120,
+            height: 150 + Math.random() * 400,
+            speed: 0.5 + Math.random() * 1.5,
+            color: '#1a1a2e',
+            windows: Array.from({length: 12}, () => Math.random() > 0.7)
+        });
     }
-    init();
-    update();
 }
 
+function drawCity() {
+    buildings.forEach(b => {
+        // Corpo do prédio
+        ctx.fillStyle = b.color;
+        ctx.fillRect(b.x, canvas.height - b.height, b.width, b.height);
+        
+        // Janelas iluminadas
+        ctx.fillStyle = "#f1c40f55";
+        let winW = 8, winH = 8;
+        for(let row = 0; row < 10; row++) {
+            for(let col = 0; col < 3; col++) {
+                if(b.windows[row]) {
+                    ctx.fillRect(b.x + 15 + (col * 30), canvas.height - b.height + 20 + (row * 35), winW, winH);
+                }
+            }
+        }
+        
+        if(gameRunning) b.x -= b.speed;
+        if(b.x + b.width < 0) b.x = canvas.width + 100;
+    });
+}
+
+// --- LÓGICA DO JOGO ---
 class Platform {
-    constructor(x, y, width, color) {
-        this.x = x; this.y = y; this.width = width; this.height = 35; this.color = color;
+    constructor(x, y, width) {
+        this.x = x; this.y = y; this.width = width; this.height = 30;
     }
     draw() {
-        ctx.save();
-        ctx.shadowBlur = 15; ctx.shadowColor = this.color;
-        ctx.fillStyle = this.color;
+        // Base da viga
+        let grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
+        grad.addColorStop(0, "#2c3e50");
+        grad.addColorStop(1, "#000000");
+        ctx.fillStyle = grad;
         ctx.fillRect(this.x, this.y, this.width, this.height);
-        ctx.restore();
+        
+        // Brilho Neon na borda
+        ctx.strokeStyle = "#00fbff";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(this.x, this.y, this.width, this.height);
     }
     update() { this.x -= gameSpeed; }
 }
 
 class Coin {
     constructor(x, y) {
-        this.x = x; this.y = y; this.size = 14; this.angle = 0;
+        this.x = x; this.y = y; this.radius = 12;
     }
     draw() {
-        this.angle += 0.15;
-        ctx.save();
-        ctx.shadowBlur = 10; ctx.shadowColor = "#ffd700";
-        ctx.fillStyle = "#FFD700";
-        let w = Math.cos(this.angle) * this.size;
         ctx.beginPath();
-        ctx.ellipse(this.x, this.y, Math.abs(w), this.size, 0, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
+        ctx.fillStyle = "#FFD700";
+        ctx.shadowBlur = 15; ctx.shadowColor = "#FFD700";
         ctx.fill();
-        ctx.restore();
+        ctx.shadowBlur = 0;
     }
     update() { this.x -= gameSpeed; }
 }
 
-function init() {
-    platforms = [new Platform(0, canvas.height - 150, canvas.width + 100, "#00fbff")];
-    items = []; score = 0; distance = 0; gameSpeed = 6.5; gameOver = false;
-    player.y = canvas.height - 300; player.dy = 0; frames = 0;
+function startGame() {
+    menu.style.display = 'none';
+    ui.style.display = 'flex';
+    gameRunning = true;
+    if (!musicaIniciada) {
+        musica.play().catch(e => {});
+        musicaIniciada = true;
+    }
+    init();
+    update();
 }
 
-function spawnLogic() {
-    let lastP = platforms[platforms.length - 1];
-    if (lastP.x + lastP.width < canvas.width + 300) {
-        let gap = 130 + Math.random() * 100; 
-        let newX = lastP.x + lastP.width + gap;
-        let newY = Math.max(200, Math.min(canvas.height - 150, lastP.y + (Math.random() * 200 - 100)));
-        let newWidth = 300 + Math.random() * 300;
-        platforms.push(new Platform(newX, newY, newWidth, "#ff00e5"));
-        if (Math.random() > 0.4) items.push(new Coin(newX + newWidth/2, newY - 50));
-    }
+function init() {
+    createBuildings();
+    platforms = [new Platform(0, canvas.height - 120, canvas.width + 200)];
+    items = []; score = 0; gameSpeed = 6; gameOver = false; frames = 0;
+    player.y = canvas.height - 300; player.dy = 0;
 }
 
 function update() {
     if (!gameRunning) return;
     if (gameOver) {
         menu.style.display = 'flex';
-        document.querySelector('h1').innerHTML = "FIM DE JOGO!<br><span style='font-size:20px'>Pontos: "+score+"</span>";
-        document.querySelector('.btn-play').innerText = "Tentar Novamente";
+        document.querySelector('h1').innerHTML = "FIM DE JOGO<br><span style='font-size:20px; color:#00fbff'>"+score+" PONTOS</span>";
         gameRunning = false;
         return;
     }
 
     frames++;
-    distance = Math.floor(frames / 10);
-    distElement.innerText = distance;
+    distElement.innerText = Math.floor(frames/10);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    drawCity();
+
+    // Player
     player.dy += player.gravity;
     player.y += player.dy;
     player.grounded = false;
 
     platforms.forEach((p, i) => {
         p.update(); p.draw();
-        if (player.x + player.width * 0.7 > p.x && player.x + player.width * 0.3 < p.x + p.width && 
+        if (player.x + 50 > p.x && player.x + 20 < p.x + p.width && 
             player.y + player.height > p.y && player.y + player.height < p.y + p.height + player.dy + 5) {
             if (player.dy >= 0) { player.grounded = true; player.dy = 0; player.y = p.y - player.height; }
         }
-        if (p.x + p.width < -500) platforms.splice(i, 1);
+        if (p.x + p.width < -100) platforms.splice(i, 1);
     });
 
     items.forEach((coin, i) => {
         coin.update(); coin.draw();
-        let dx = (player.x + player.width/2) - coin.x;
-        let dy = (player.y + player.height/2) - coin.y;
-        if (Math.sqrt(dx*dx + dy*dy) < 55) { 
+        let dx = (player.x + 35) - coin.x;
+        let dy = (player.y + 35) - coin.y;
+        if (Math.sqrt(dx*dx + dy*dy) < 45) { 
             items.splice(i, 1); score += 10; scoreElement.innerText = score;
-            somMoeda.currentTime = 0;
-            somMoeda.play().catch(() => {}); 
+            somMoeda.currentTime = 0; somMoeda.play().catch(() => {});
+            gameSpeed += 0.05;
         }
     });
 
-    ctx.drawImage(player.img, player.x, player.y, player.width, player.height);
-    if (player.y > canvas.height + 100) gameOver = true;
+    // Spawn inteligente
+    let lastP = platforms[platforms.length - 1];
+    if (lastP.x + lastP.width < canvas.width + 200) {
+        let newX = lastP.x + lastP.width + (100 + Math.random() * 120);
+        let newY = Math.max(180, Math.min(canvas.height - 100, lastP.y + (Math.random() * 140 - 70)));
+        platforms.push(new Platform(newX, newY, 250 + Math.random() * 200));
+        if (Math.random() > 0.5) items.push(new Coin(newX + 100, newY - 40));
+    }
 
-    spawnLogic();
+    ctx.drawImage(player.img, player.x, player.y, player.width, player.height);
+    if (player.y > canvas.height) gameOver = true;
+
     requestAnimationFrame(update);
 }
 
@@ -208,12 +245,13 @@ function handleInput(e) {
 }
 
 window.addEventListener('keydown', (e) => { if(e.code === 'Space') handleInput(e); });
-canvas.addEventListener('mousedown', handleInput);
 canvas.addEventListener('touchstart', handleInput, { passive: false });
+canvas.addEventListener('mousedown', handleInput);
 
 window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    createBuildings();
 });
 </script>
 </body>
