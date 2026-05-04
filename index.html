@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Léo & Coca-Cola: Neon City Final</title>
+    <title>Léo & Coca-Cola: Golden Power-Up</title>
     <style>
         body { margin: 0; overflow: hidden; background: #010103; font-family: 'Segoe UI', sans-serif; touch-action: none; }
         canvas { display: block; margin: 0 auto; }
@@ -40,12 +40,12 @@
 <body>
 
     <div id="menu">
-        <h1>LÉO & COCA-COLA<br><span style="color: #ff00e5; font-size: 0.6em;">NIGHT RUNNER</span></h1>
+        <h1>LÉO & COCA-COLA<br><span style="color: #ff00e5; font-size: 0.6em;">GOLDEN EDITION</span></h1>
         <button class="btn-play" onclick="startGame()">INICIAR</button>
     </div>
 
     <div id="ui">
-        <div>METROS: <span id="dist">0</span></div>
+        <div>DISTÂNCIA: <span id="dist">0</span>m</div>
         <div>PONTOS: <span id="score">0</span></div>
     </div>
 
@@ -66,12 +66,18 @@ const musica = new Audio('fundo.mp3');
 musica.loop = true;
 const somMoeda = new Audio('som moedas.mp3'); 
 
+// --- IMAGENS ---
+const imgNormal = new Image();
+imgNormal.src = 'leo.png';
+const imgEspecial = new Image();
+imgEspecial.src = 'leo especial.png';
+
 const player = {
     x: 100, y: 0, width: 75, height: 75,
     dy: 0, jumpForce: 15.5, gravity: 0.65,
-    grounded: false, img: new Image()
+    grounded: false, currentImg: imgNormal,
+    isSpecial: false, specialTimer: 0
 };
-player.img.src = 'leo.png';
 
 let gameRunning = false, gameOver = false, musicaIniciada = false;
 let score = 0, frames = 0, gameSpeed = 7;
@@ -101,11 +107,9 @@ function createCity() {
 function drawCity() {
     cityLayers.forEach(layer => {
         layer.forEach(b => {
-            // Prédio
             ctx.fillStyle = b.color;
             ctx.fillRect(b.x, canvas.height - b.height, b.width, b.height);
             
-            // Anteninhas que piscam
             if(b.hasAntenna) {
                 ctx.strokeStyle = b.color;
                 ctx.lineWidth = 2;
@@ -114,25 +118,21 @@ function drawCity() {
                 ctx.lineTo(b.x + b.width/2, canvas.height - b.height - 30);
                 ctx.stroke();
                 
-                // Luz de sinalização piscante
                 if(Math.floor(frames / 30) % 2 === 0) {
                     ctx.fillStyle = "#ff0000";
-                    ctx.shadowBlur = 10; ctx.shadowColor = "red";
                     ctx.beginPath();
                     ctx.arc(b.x + b.width/2, canvas.height - b.height - 32, 3, 0, Math.PI*2);
                     ctx.fill();
-                    ctx.shadowBlur = 0;
                 }
             }
 
-            // Janelas
             b.windows.forEach((w, i) => {
                 if(w.on) {
                     w.opacity += w.blinkSpeed;
                     let alpha = 0.1 + (Math.abs(Math.sin(w.opacity)) * 0.3);
                     ctx.fillStyle = `rgba(255, 255, 180, ${alpha})`;
                     let wx = b.x + 20 + (i % 3 * 35);
-                    let wy = canvas.height - b.height + 30 + (Math.floor(i/3) * 45);
+                    let wy = canvas.height - b.height + 30 + (Math.floor(i/4) * 45);
                     if(wx < b.x + b.width - 20) ctx.fillRect(wx, wy, 10, 10);
                 }
             });
@@ -149,36 +149,37 @@ class Platform {
     }
     draw() {
         ctx.save();
-        ctx.shadowBlur = 15; ctx.shadowColor = "#ff00e5";
+        ctx.shadowBlur = 15; ctx.shadowColor = player.isSpecial ? "#ffd700" : "#ff00e5";
         ctx.fillStyle = "#111";
         ctx.fillRect(this.x, this.y, this.width, this.height);
-        // Friso Neon
-        ctx.fillStyle = `rgba(255, 0, 229, ${0.5 + Math.abs(Math.sin(frames * 0.05)) * 0.5})`;
+        ctx.fillStyle = player.isSpecial ? "#ffd700" : "#ff00e5";
         ctx.fillRect(this.x, this.y, this.width, 3);
         ctx.restore();
     }
     update() { this.x -= gameSpeed; }
 }
 
-class Bottle { // Moeda em formato de garrafinha
-    constructor(x, y) {
-        this.x = x; this.y = y;
+class Bottle {
+    constructor(x, y, type = "normal") {
+        this.x = x; this.y = y; this.type = type;
     }
     draw() {
         let bounce = Math.sin(frames * 0.1) * 8;
         ctx.save();
         ctx.translate(this.x, this.y + bounce);
-        ctx.shadowBlur = 15; ctx.shadowColor = "#ff0000";
         
-        // Desenho da Garrafinha Estilizada
-        ctx.fillStyle = "#ff0000"; // Corpo
-        ctx.fillRect(-6, -10, 12, 20); // Base
+        let color = this.type === "golden" ? "#ffd700" : "#ff0000";
+        if(this.type === "golden") {
+            ctx.shadowBlur = 20; ctx.shadowColor = "gold";
+        } else {
+            ctx.shadowBlur = 10; ctx.shadowColor = "red";
+        }
+        
+        ctx.fillStyle = color;
+        ctx.fillRect(-6, -10, 12, 20); // Corpo
         ctx.fillRect(-3, -18, 6, 8);   // Pescoço
-        ctx.fillStyle = "#ffffff";    // Rótulo
-        ctx.fillRect(-6, -2, 12, 6);
-        ctx.fillStyle = "#ddd";       // Tampinha
-        ctx.fillRect(-4, -20, 8, 3);
-        
+        ctx.fillStyle = this.type === "golden" ? "#fff" : "#ffffff";
+        ctx.fillRect(-6, -2, 12, 6);   // Rótulo
         ctx.restore();
     }
     update() { this.x -= gameSpeed; }
@@ -197,6 +198,7 @@ function init() {
     platforms = [new Platform(0, canvas.height - 150, canvas.width + 400)];
     items = []; score = 0; gameSpeed = 7; gameOver = false; frames = 0;
     player.y = canvas.height - 300; player.dy = 0;
+    player.currentImg = imgNormal; player.isSpecial = false;
     loop();
 }
 
@@ -204,7 +206,7 @@ function loop() {
     if (!gameRunning) return;
     if (gameOver) {
         menu.style.display = 'flex';
-        document.querySelector('h1').innerHTML = "GAME OVER<br><span style='color:#00fbff; font-size:0.5em'>"+score+" PONTOS</span>";
+        document.querySelector('h1').innerHTML = "FIM DE JOGO<br><span style='color:#ffd700; font-size:0.5em'>"+score+" PONTOS</span>";
         gameRunning = false;
         return;
     }
@@ -213,6 +215,16 @@ function loop() {
     scoreElement.innerText = score;
     distElement.innerText = Math.floor(frames/10);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Lógica do Power-up
+    if(player.isSpecial) {
+        player.specialTimer--;
+        if(player.specialTimer <= 0) {
+            player.isSpecial = false;
+            player.currentImg = imgNormal;
+            gameSpeed -= 3; // Volta a velocidade
+        }
+    }
 
     drawCity();
 
@@ -229,14 +241,23 @@ function loop() {
         if (p.x + p.width < -200) platforms.splice(i, 1);
     });
 
-    items.forEach((bottle, i) => {
-        bottle.update(); bottle.draw();
-        let dx = (player.x + 37) - bottle.x;
-        let dy = (player.y + 37) - bottle.y;
+    items.forEach((item, i) => {
+        item.update(); item.draw();
+        let dx = (player.x + 37) - item.x;
+        let dy = (player.y + 37) - item.y;
         if (Math.sqrt(dx*dx + dy*dy) < 50) { 
-            items.splice(i, 1); score += 10;
+            if(item.type === "golden") {
+                score += 40;
+                gameSpeed += 3;
+                player.isSpecial = true;
+                player.currentImg = imgEspecial;
+                player.specialTimer = 300; // Dura aprox. 5 segundos
+            } else {
+                score += 10;
+                gameSpeed += 0.02;
+            }
+            items.splice(i, 1);
             somMoeda.currentTime = 0; somMoeda.play().catch(() => {});
-            gameSpeed += 0.02;
         }
     });
 
@@ -245,10 +266,24 @@ function loop() {
         let gap = 130 + Math.random() * 120;
         let nY = Math.max(200, Math.min(canvas.height - 120, lastP.y + (Math.random() * 160 - 80)));
         platforms.push(new Platform(lastP.x + lastP.width + gap, nY, 300 + Math.random() * 200));
-        if (Math.random() > 0.5) items.push(new Bottle(lastP.x + lastP.width + gap + 150, nY - 50));
+        
+        // Spawn de Itens
+        let rand = Math.random();
+        if (rand > 0.95) { // 5% de chance de ser Dourada
+            items.push(new Bottle(lastP.x + lastP.width + gap + 150, nY - 60, "golden"));
+        } else if (rand > 0.5) {
+            items.push(new Bottle(lastP.x + lastP.width + gap + 150, nY - 50, "normal"));
+        }
     }
 
-    ctx.drawImage(player.img, player.x, player.y, player.width, player.height);
+    // Efeito visual de rastro se estiver especial
+    if(player.isSpecial) {
+        ctx.globalAlpha = 0.3;
+        ctx.drawImage(player.currentImg, player.x - 20, player.y, player.width, player.height);
+        ctx.globalAlpha = 1.0;
+    }
+
+    ctx.drawImage(player.currentImg, player.x, player.y, player.width, player.height);
     if (player.y > canvas.height) gameOver = true;
 
     requestAnimationFrame(loop);
